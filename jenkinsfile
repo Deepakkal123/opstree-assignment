@@ -1,0 +1,44 @@
+pipeline {
+  agent any
+  stages {
+
+        stage('Build') {
+            steps {
+                sh '''
+				      
+                    bash ./simple-java-maven-app/jenkins/build/mvnbuild.bash mvn -B -DskipTests clean package
+                '''
+            }
+
+            post {
+                success {
+                   archiveArtifacts artifacts: 'simple-java-maven-app/target/*.jar', fingerprint: true
+                }
+            }
+        }
+
+
+    stage('Test') {
+            steps {
+                sh ' bash ./simple-java-maven-app/jenkins/test/mvntest.bash mvn test'
+            }
+
+        }
+
+    
+   stage('SonarQube Analysis') {
+       steps {
+        sh "/var/jenkins_home/sonar-scanner/sonar-scanner-3.3.0.1492-linux/bin/sonar-scanner -Dsonar.host.url=http://192.168.0.110:9000 -Dsonar.projectName=opstree -Dsonar.projectVersion=1.0 -Dsonar.projectKey=opstree -Dsonar.sources=. -Dsonar.projectBaseDir=/var/jenkins_home/workspace/CI-pipe/simple-java-maven-app"
+    }
+          
+     } 
+	
+    stage('deploy') {
+            steps {
+                sh ' bash ./simple-java-maven-app/jenkins/test/mvndeploy.bash mvn deploy'
+            }
+	}
+  
+}
+
+}
